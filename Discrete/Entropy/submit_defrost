@@ -1,0 +1,14 @@
+#!/bin/tcsh
+#PBS -l nodes=8:ppn=8
+#PBS -q workq
+#PBS -r n
+#PBS -l walltime=48:00:00
+#PBS -N m2g2_cross_lnr
+
+module load intel
+module load fftw
+module load openmpi
+
+cd $PBS_O_WORKDIR
+#
+time mpirun defrost > log.out
