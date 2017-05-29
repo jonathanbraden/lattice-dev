@@ -1,0 +1,38 @@
+Current set of required source code:
+evolve_spectral.f90
+fftw_mod_mpi.f90
+initialize.f90
+analysis_spec.f90
+hamiltonian_minkowski.f90, hamiltonian_conformal.f90, hamiltonian_cosmic.f90 (requires some modification to play well with evolve_spectral)
+integrator.f90
+params.f90
+
+In progress:
+init_fields.f90
+output_analysis.f90
+output.f90
+lattice_params.f90  <- In progress, will store important information about the lattice and its location in the overall program structure
+
+Current stuff to fix for the transposed vs. nontranspoed output
+
+1) Fix up the spectrum output (right now it will probably crash if we have non-square lattices
+- possible solution - pass in the cutoff in Fk (or use k_size,k_offset from params, although it would be best not to have explicit reliance on params)
+
+Current status of the output modules:
+- outputfile.f90 is a copy of the stuff from my old code
+   - I've removed some of the nonfunctioning subroutines and started to clean it up
+   - to use it for this version, needd to replace p3dfft calls with straight fftw calls
+   - also, I want to make the output options private variables (so that I'm only calling the interface from the main program)
+   - Question: how do I deal with the FFTW determined sizes for the input arrays
+
+Things to fix/add:
+- scalar_rho(), kinetic_energy(), grad_energy(), potential_energy() functions need to be added into all hamiltonian models.  (so far added to hamiltonian_minkowski.f90 and also hamiltonian_conformal_noncanonical_rksplit.f90)
+- Need to fix wrap_fields() in most of the hamiltonian files (actually, the better option is to put this subroutine somewhere in a non model file where it wont be modified)
+
+Notes:
+-for noncanonical models, the allocation of tmp_lat in evolve_spectral.f90 needs to be uncommented
+
+To do merging:
+- I added some initial condition parameters (effective mass, derivative between two field definitions) for noncanonically coupled fields.  These are needed to properly set the initial field amplitude.  Currently, only implemented in evolve_fields.f90 and the conformally flattenned case.
+Need to merge these changes into the main part (for canonical fields, the normalization is just one)
+- There is a bug in computing kinetic and gradient energies of individual fields.  Currently, if OpenMP is used for any threading, they will be wrong
