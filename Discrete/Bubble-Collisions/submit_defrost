@@ -1,0 +1,14 @@
+#!/bin/tcsh
+#PBS -l nodes=32:ppn=8
+#PBS -q workq
+#PBS -r n
+#PBS -l walltime=48:00:00
+#PBS -N bubbles_exact_profile
+
+module load intel
+module load openmpi
+module load fftw
+
+cd /mnt/scratch-lustre/jbraden/bubble_collisions/collision_exact_ic_1024_wline/
+#
+time mpirun defrost > log.out
