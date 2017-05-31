@@ -5,10 +5,16 @@
 #PBS -l walltime=48:00:00
 #PBS -N m2g2_cross_lnr
 
-module load intel
-module load fftw
-module load openmpi
+module unload fftw
+module unload openmpi
+module unload intel
+
+module load intel/intel-12.1.5
+module load openmpi/1.6.1-intel-12.1.5
+module load fftw/3.3.2-intel-12.1.5-openmpi-1.6.1
 
 cd $PBS_O_WORKDIR
 #
+make clean
+make
 time mpirun defrost > log.out

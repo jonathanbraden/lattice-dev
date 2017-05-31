@@ -5,10 +5,15 @@
 #PBS -l walltime=48:00:00
 #PBS -N bubbles_exact_profile
 
-module load intel
-module load openmpi
-module load fftw
+module unload fftw
+module unload openmpi
+module unload intel
 
-cd /mnt/scratch-lustre/jbraden/bubble_collisions/collision_exact_ic_1024_wline/
+module load intel/intel-12.1.5
+module load openmpi/1.6.1-intel-12.1.5
+module load fftw/3.3.2-intel-12.1.5-openmpi-1.6.1
+
+#cd /mnt/scratch-lustre/jbraden/bubble_collisions/collision_exact_ic_1024_wline/
+cd $PBS_O_WORKDIR
 #
 time mpirun defrost > log.out
