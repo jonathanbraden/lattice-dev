@@ -53,13 +53,13 @@ module fftw3
     end subroutine allocate_2d_array
 
     subroutine allocate_3d_array(L,M,N, arr, Fk)
-      integer :: L,M,N
+      integer(C_INT) :: L,M,N
       
       real(C_DOUBLE), pointer :: arr(:,:,:)
       complex(C_DOUBLE_COMPLEX), pointer :: Fk(:,:,:)
 
       type(C_PTR) :: fptr, fkptr
-      integer :: LL
+      integer(C_INT) :: LL
 
       LL = L/2+1
 
@@ -214,30 +214,31 @@ module fftw3
 
     subroutine gradient_squared_3d_spectral(nsize, f, Fk, Fk2, grad2, dk,planf, planb)
       integer, dimension(1:3), intent(in) :: nsize
-      real(C_DOUBLE), pointer :: f(:,:,:)
-      real(C_DOUBLE) :: grad2(nsize(1),nsize(2),nsize(3))
+      !      real(C_DOUBLE), pointer :: f(:,:,:)
+      real(C_DOUBLE), intent(inout) :: f(:,:,:)
+      real(C_DOUBLE), intent(out) :: grad2(nsize(1),nsize(2),nsize(3))
       complex(C_DOUBLE_COMPLEX), pointer :: Fk(:,:,:), Fk2(:,:,:)
       real*8 :: dk
-      type(C_PTR) :: planf, planb
+      type(C_PTR), intent(in) :: planf, planb
 
       integer :: i, ii
       integer, dimension(1:3) :: nnsize
       real(C_DOUBLE) :: kcur
       complex(C_DOUBLE_COMPLEX), parameter :: i_imag = (0.,1.)
-
+      
       nnsize = nsize/2+1
 
       call fftw_execute_dft_r2c( planf, f, Fk )
       Fk2 = Fk
 
-      do i=1,nsize(3); if (i>nnsize(3)) then; ii=nnsize(3)+1-i; else; ii=i-1; endif
+      do i=1,nsize(3); if (i>nnsize(3)) then; ii=-(nsize(3)+1-i); else; ii=i-1; endif
          kcur = dble(ii)*dk
          Fk(:,:,i) = i_imag*kcur*Fk2(:,:,i)
       enddo
       call fftw_execute_dft_c2r(planb, Fk, f)
       grad2 = f**2
 
-      do i=1,nsize(2); if (i>nnsize(2)) then; ii=nnsize(2)+1-i; else; ii=i-1; endif
+      do i=1,nsize(2); if (i>nnsize(2)) then; ii=-(nsize(2)+1-i); else; ii=i-1; endif
          kcur = dble(ii)*dk
          Fk(:,i,:) = i_imag*kcur*Fk2(:,i,:)
       enddo
@@ -249,6 +250,7 @@ module fftw3
          Fk(i,:,:) = i_imag*kcur*Fk2(i,:,:)
       enddo
       call fftw_execute_dft_c2r(planb, Fk, f)
+
       grad2 = grad2 + f**2
       grad2 = grad2 / ( dble(nsize(1))*dble(nsize(2))*dble(nsize(3)) )**2
     end subroutine gradient_squared_3d_spectral
@@ -268,12 +270,12 @@ module fftw3
       GE = 0.
       call fftw_execute_dft_r2c(planf, f, Fk)
 !$OMP PARALLEL DO PRIVATE(ii,jj,kk,rad2) FIRSTPRIVATE(n1,n2,n3,nn1,nn2,nn3,dk) REDUCTION(+:GE)
-      do k=1,n3; if (k>nn3) then; kk = n3+1-k; else; kk=k-1; endif
-      do j=1,n2; if (j>nn2) then; jj = n2+1-j; else; jj=j-1; endif
-         do i=1,nn1
-            rad2 = dble((i-1)**2) + dble(jj**2) + dble(kk**2)
-            GE = GE + rad2*dk**2*Fk(i,j,k)*conjg(Fk(i,j,k))
-            if (abs(Fk(i,j,k)) > 1.e-14) print*,"Fk at ",i,j,k,Fk(i,j,k),rad2
+      do k=1,n3; if (k>nn3) then; kk = -(n3+1-k); else; kk=k-1; endif
+      do j=1,n2; if (j>nn2) then; jj = -(n2+1-j); else; jj=j-1; endif
+         do i=1,n1; if (i>nn1) then; ii = n1+1-i; else; ii=i-1; endif ! easiest way to enforce counting, fix later
+            rad2 = dble(ii**2) + dble(jj**2) + dble(kk**2)
+            GE = GE + rad2*dk**2*Fk(ii+1,j,k)*conjg(Fk(ii+1,j,k))
+            !if (abs(Fk(i,j,k)) > 1.e-14) print*,"Fk at ",i,j,k,Fk(i,j,k),rad2
          enddo
       enddo
       enddo
