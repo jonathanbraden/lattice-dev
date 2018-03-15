@@ -1,0 +1,37 @@
+#!/bin/bash
+#PBS -S /bin/bash
+#PBS -q cores24
+#PBS -N lattice
+#PBS -l nodes=1:ppn=24
+#PBS -l walltime=24:00:00
+#PBS -l mem=8gb
+#PBS -j oe
+#PBS -V
+
+OMP_NUM_THREADs=8
+OMP_DYNAMIC=FALSE
+export OMP_DYNAMIC OMP_NUM_THREADS
+ulimit -Ss unlimited
+
+module load compilers/intel/13.1/046+mpi
+module load fftw/3.3.5
+
+# Export FFTW path here
+
+# Directory creation, etc
+BASEDIR='/home/jbraden/Code/lattice-dev/Pseudospec/oscillon-prl'
+#RUNDIR='/state/partition1/oscillon-prl' 
+RUNDIR='/home/jbraden/runs/oscillon-prl/conformal/'
+DATADIR='/home/jbraden/data/oscillon-prl/conformal/N64'
+
+mkdir -p $RUNDIR
+cd $RUNDIR
+rm -rf N64
+cp -r $BASEDIR N64
+cd N64
+make clean
+make
+./runspec > mylog
+make clean
+cp -r $RUNDIR $DATADIR
+#rm -rf $RUNDIR

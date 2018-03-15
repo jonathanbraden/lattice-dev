@@ -1,0 +1,21 @@
+#!/bin/tcsh
+#PBS -l nodes=1:ppn=8
+#PBS -q workq
+#PBS -r n
+#PBS -l walltime=48:00:00
+#PBS -N spec_test
+
+module unload fftw
+module unload openmpi
+module unload intel
+
+module load intel/intel-12.1.5
+module load openmpi/1.6.1-intel-12.1.5
+module load fftw/3.3.2-intel-12.1.5-openmpi-1.6.1
+
+cd $PBS_O_WORKDIR
+#
+setenv OMP_NUM_THREADS 8
+make clean
+make spectral
+time ./runspec > log.out
