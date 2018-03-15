@@ -74,7 +74,8 @@ program lattice
   print*,"Error code is ",terror
   terror = omp_get_max_threads()
   print*,"Num Threads = ",terror
-  call fftw_plan_with_nthreads(omp_get_max_threads())
+  !  call fftw_plan_with_nthreads(omp_get_max_threads())
+  call fftw_plan_with_nthreads(1)
 #endif
 
 ! initialize arrays for doing FFT
@@ -113,8 +114,8 @@ program lattice
     subroutine initialize_arrays()
 #ifdef THREEDIM
       call allocate_fftw_array(nx,ny,nz,laplace,Fk)
-      planf = fftw_plan_dft_r2c_3d(nz, ny, nx, laplace, Fk, FFTW_MEASURE+FFTW_DESTROY_INPUT) 
-      planb = fftw_plan_dft_c2r_3d(nz, ny, nx, Fk, laplace, FFTW_MEASURE+FFTW_DESTROY_INPUT) 
+      planf = fftw_plan_dft_r2c_3d(nz, ny, nx, laplace, Fk, FFTW_MEASURE) 
+      planb = fftw_plan_dft_c2r_3d(nz, ny, nx, Fk, laplace, FFTW_MEASURE) 
 
       call allocate_3d_fourier_array(nx,ny,nz,Fk2)
 #endif
@@ -243,7 +244,7 @@ program lattice
 
       laplace = fld(1,IRANGE)
       GE = gradient_energy_3d(nx,ny,nz,laplace,Fk,dk,planf)
-      print*,"Mean spectral gradsq is ", GE
+      print*,"Mean spectral gradsq is ", 0.5_dl*GE
 
       laplace = fld(1,IRANGE)
       call gradient_squared_3d_spectral([nx,ny,nz],laplace,Fk,Fk2,grad_squared_s,dk,planf,planb)
@@ -253,8 +254,8 @@ program lattice
       print*,"Mean grad energy via laplace is ",-0.5_dl*sum(fld(1,IRANGE)*laplace(IRANGE))/nvol
       print*,"Mean grad energy via gradsq is ",0.5_dl*sum(grad_squared_s(IRANGE))/nvol
 
-      do i=2,nx-1
-         k=nz/2; j=ny/2
+      do j=2,ny-1
+         k=nz/2; i=nx/2
          lap = (1._dl/dx**2/cc)*(STENCIL(c,LAPLACIAN))
          grad_sq = (0.5_dl/dx**2/cc)*(STENCIL(c,GRAD2)) ! check factors here
 #ifdef THREEDIM
@@ -329,7 +330,8 @@ program lattice
 !
 ! Randomly sample a gaussian random field with the appropriate spectrum
 !
-#define KCUT_FAC 0.125
+! Check this doesn't screw up when the k_x mode is homogeneous, since in this case we aren't explicitly forcing the correct symmetry of the matrix to ensure a real field.  Probably doesn't matter
+#define KCUT_FAC 0.5
     subroutine sample(gamma, m2eff, spec)
 !      real(C_DOUBLE), pointer :: f(:,:,:)
       real(dl) :: gamma
@@ -408,22 +410,9 @@ program lattice
          Fk(:,j,k) = sqrt(-2.0*log(a)) * exp(w*p) * Fk(:,j,k)
       enddo; enddo
 
-      Fk = 0.
-      Fk(1,1,6) = 1./2.**0.5*(1.,1.)/nvol
-!      Fk(1,3,1) = 1./nvol
-
       call fftw_execute_dft_c2r(planb, Fk, laplace)
-
+      
       call fftw_execute_dft_r2c(planf, laplace, Fk)
-      print*,"Checking inverse FFT"
-      do k=1,nz; if (k>nnz) then; kk = nnz+1-k; else; kk=k-1; endif
-      do j=1,ny; if (j>nny) then; jj = nny+1-j; else; jj=j-1; endif
-         do i=1,nnx
-            rad2 = dble((i-1)**2) + dble(jj**2) + dble(kk**2)
-            if (abs(Fk(i,j,k)) > 1.e-14) print*,"Fk at ",i,j,k,Fk(i,j,k),rad2
-         enddo
-      enddo
-      enddo
     end subroutine sample
 
 #ifdef OSCILLON_START
@@ -559,7 +548,7 @@ program lattice
       call write_fields(time)
       call dump_rho(time)
       
-      laplace(IRANGE) = fld(2,IRANGE)
+!      laplace(IRANGE) = fld(2,IRANGE)
 #ifdef THREEDIM
       laplace(IRANGE) = fld(1,IRANGE)
       call spectrum_3d(spec(:,1),laplace, Fk, planf)
