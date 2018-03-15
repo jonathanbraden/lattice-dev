@@ -239,21 +239,19 @@ program lattice
 
       integer :: j,k
       real(dl) :: lap(1:nfld), grad_sq(1:nfld)
-      real(dl) :: GE
+      real(dl), dimension(1:3) :: GE
       j=ny/2; k=nz/2
 
       laplace = fld(1,IRANGE)
-      GE = gradient_energy_3d(nx,ny,nz,laplace,Fk,dk,planf)
-      print*,"Mean spectral gradsq is ", 0.5_dl*GE
-
+      GE(1) = 0.5_dl*gradient_energy_3d(nx,ny,nz,laplace,Fk,dk,planf)
       laplace = fld(1,IRANGE)
       call gradient_squared_3d_spectral([nx,ny,nz],laplace,Fk,Fk2,grad_squared_s,dk,planf,planb)
       laplace = fld(1,IRANGE)
       call laplacian_3d(nx, ny, nz,laplace,Fk,dk, planf, planb)
-
-      print*,"Mean grad energy via laplace is ",-0.5_dl*sum(fld(1,IRANGE)*laplace(IRANGE))/nvol
-      print*,"Mean grad energy via gradsq is ",0.5_dl*sum(grad_squared_s(IRANGE))/nvol
-
+      GE(2) = -0.5_dl*sum(fld(1,IRANGE)*laplace(IRANGE))/nvol
+      GE(3) = 0.5_dl*sum(grad_squared_s(IRANGE))/nvol
+      print*,"Mean gradient energies are ",GE
+      
       do j=2,ny-1
          k=nz/2; i=nx/2
          lap = (1._dl/dx**2/cc)*(STENCIL(c,LAPLACIAN))
@@ -410,9 +408,8 @@ program lattice
          Fk(:,j,k) = sqrt(-2.0*log(a)) * exp(w*p) * Fk(:,j,k)
       enddo; enddo
 
-      call fftw_execute_dft_c2r(planb, Fk, laplace)
-      
-      call fftw_execute_dft_r2c(planf, laplace, Fk)
+      call fftw_execute_dft_c2r(planb, Fk, laplace)  
+!      call fftw_execute_dft_r2c(planf, laplace, Fk)
     end subroutine sample
 
 #ifdef OSCILLON_START
