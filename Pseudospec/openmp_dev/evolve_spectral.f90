@@ -291,7 +291,7 @@ program lattice
       seed = 37*(/ (i-1, i=1,nseed) /)
       call random_seed(PUT=seed)
       deallocate(seed)
-
+      
       do j=1,nfld
          call sample(-0.25, 3.*fld0(1)**2)
          fld(j,IRANGE) = fld0(j) + laplace
@@ -402,7 +402,7 @@ program lattice
 #ifdef THREEDIM
       write(98,'(30(ES22.15,2X))') time, acur, rho, KE, PE, GE, grav_energy(), &
            (rho+grav_energy())/rho, -ysclp**2/12._dl/acur**4, &
-           sum(fld(1,IRANGE))/nvol, sum(fld(2,IRANGE))/nvol
+           sum(fld(1,IRANGE))/nvol!, sum(fld(2,IRANGE))/nvol !Commented out last output, was for two field model
 #endif
 #ifdef TWODIM
       write(98,*) time, rho, KE, PE, GE, grav_energy(), sum(fld(1,:,:))/nvol, sum(fld(2,:,:))/nvol
@@ -527,8 +527,8 @@ program lattice
       
 !      call write_fields(time)
       call dump_rho(time)
-      
-      laplace(IRANGE) = fld(2,IRANGE)
+ 
+!      laplace(IRANGE) = fld(2,IRANGE) !commented out due to being for two field model
 #ifdef THREEDIM
       laplace(IRANGE) = fld(1,IRANGE)
       call spectrum_3d(spec(:,1),laplace, Fk, planf)
